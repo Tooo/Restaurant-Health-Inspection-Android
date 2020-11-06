@@ -106,7 +106,7 @@ public class UpdateDialog extends AppCompatDialogFragment {
 
         // Build the alert
         return new AlertDialog.Builder(getActivity())
-                .setTitle(getString(R.string.new_update))
+                .setTitle("New Update!")
                 .setView(view)
                 .setPositiveButton(android.R.string.ok, okListener)
                 .setNegativeButton(android.R.string.no, noListener)

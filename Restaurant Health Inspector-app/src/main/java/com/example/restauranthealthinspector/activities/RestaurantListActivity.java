@@ -1,13 +1,13 @@
 package com.example.restauranthealthinspector.activities;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentManager;
 
 import android.Manifest;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -36,15 +36,19 @@ import com.example.restauranthealthinspector.model.Inspection;
 import com.example.restauranthealthinspector.model.Restaurant;
 import com.example.restauranthealthinspector.model.RestaurantsManager;
 import com.example.restauranthealthinspector.model.FavouriteRestaurantManager;
-import com.example.restauranthealthinspector.model.SearchFilter;
 import com.example.restauranthealthinspector.model.online.DataLoad;
 import com.example.restauranthealthinspector.model.online.DataRequest;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.gun0912.tedpermission.PermissionListener;
 import com.gun0912.tedpermission.TedPermission;
 
+import org.w3c.dom.Text;
+
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -54,27 +58,31 @@ import java.util.concurrent.TimeUnit;
 /**
  * A list of restaurants with brief inspections report.
  */
-public class RestaurantListActivity extends AppCompatActivity {
-        private String favouriteDialogString = "";
+public class RestaurantListActivity extends AppCompatActivity implements SearchView.OnQueryTextListener {
         private RestaurantsManager myRestaurants;
         private FavouriteRestaurantManager myFavouriteRestaurants;
+//        private static ArrayList<Restaurant> favouriteRestaurantListActivity = new ArrayList<>();
         private static final String TAG = "RestaurantListActivity";
         private static final int ERROR_DIALOG_REQUEST = 9001;
         private ArrayAdapter<Restaurant> adapter;
-        private ArrayList<Restaurant> favouriteRestaurant;
-        static ArrayList<String> favouriteRestaurantNames = new ArrayList<String>();
+        ArrayList<Restaurant> favouriteRestaurant;
+        ArrayList<String> favouriteRestaurantNames = new ArrayList<String>();
+
+
 
         @Override
         protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
                 setContentView(R.layout.activity_restaurant_list);
-                loadDataFavourite();
+
                 permissionCheck();
                 setupMapButton();
 
                 Intent intent = getIntent();
                 boolean data = intent.getBooleanExtra("data", false);
                 boolean fromDialog = intent.getBooleanExtra("fromDialog", false);
+
+
 
                 if (data) {
                         try {
@@ -86,29 +94,11 @@ public class RestaurantListActivity extends AppCompatActivity {
                         populateListView();
                         setUpRestaurantClick();
                         setUpSearch();
-                        setUpRestaurantImage();
                         return;
                 }
 
                 if (fromDialog) {
-                        for(Restaurant r: favouriteRestaurant){
-                                favouriteDialogString = favouriteDialogString + " " + getString(R.string.name) + " " + r.getRestaurantName();
-                                if(r.getInspectionsManager().getInspectionList().size() == 0){
-                                        favouriteDialogString = favouriteDialogString + "\n" + " " + getString(R.string.no_inspections_recorded) + "\n\n\n";
-                                }
-                                else{
-                                        favouriteDialogString = favouriteDialogString + "\n" + " " + getString(R.string.date) + " " + r.getInspectionsManager().get(0).getInspectionDate().getFullDate();
-                                        favouriteDialogString = favouriteDialogString + "\n " + " " + getString(R.string.hazard_level) + " " +  r.getInspectionsManager().get(0).getHazardRating();
-                                        favouriteDialogString = favouriteDialogString + "\n\n\n ";
-                                }
-
-
-                        }
-                        if(favouriteDialogString.equals("")){
-                                favouriteDialogString = getString(R.string.no_favourite_restaurants);
-                        }
-                        openFavouriteDialog(favouriteDialogString);
-
+                        startMapActivity();
                 }
 
                 DataLoad dataLoad = new DataLoad(this);
@@ -121,42 +111,18 @@ public class RestaurantListActivity extends AppCompatActivity {
 
                         if (needsUpdate(restaurantData, inspectionData)) {
                                 openDialog(restaurantData, inspectionData, dataLoad);
-
-
                                 return;
                         } else {
                                 dataLoad.loadData();
 
-                        }
 
+                        }
                 } else {
                         dataLoad.loadData();
                 }
-                if(!fromDialog){
-                        startMapActivity();
-                }
+
+                startMapActivity();
         }
-
-
-        private void openFavouriteDialog(String information){
-                                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                                builder.setTitle(getString(R.string.favourite_restaurant_updates))
-                                        .setCancelable(false)
-                                        .setMessage(information)
-                                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                                @Override
-                                                public void onClick(DialogInterface dialog, int which) {
-                                                        startMapActivity();
-                                                }
-                                        });
-                                builder.create().show();
-                                builder.setCancelable(false);
-
-                        }
-
-
-
-
 
         // Code refer from stack overflow
         // https://stackoverflow.com/questions/10311834/how-to-check-if-location-services-are-enabled
@@ -245,6 +211,7 @@ public class RestaurantListActivity extends AppCompatActivity {
                 long hoursDifference = TimeUnit.HOURS.convert(timeDifference, TimeUnit.MILLISECONDS);
 
                 return hoursDifference > hours;
+
         }
 
         private boolean needsUpdate(DataRequest restaurantData, DataRequest inspectionData) {
@@ -276,68 +243,43 @@ public class RestaurantListActivity extends AppCompatActivity {
                 list.setTextFilterEnabled(true);
         }
 
-        private void setUpSearch() {
-                final SearchView searchView = findViewById(R.id.restlist_search);
-                final TextView textView = findViewById(R.id.restlist_txtRestaurant);
-                final SearchFilter searchFilter = SearchFilter.getInstance();
-
-                String previousSearch = searchFilter.getSearch();
-                if (!TextUtils.isEmpty(previousSearch)) {
-                        searchView.onActionViewExpanded();
-                        searchView.setQuery(previousSearch, true);
-                        textView.setVisibility(View.INVISIBLE);
-                        searchView.clearFocus();
-                        Filter filter = adapter.getFilter();
-                        filter.filter(previousSearch);
-                }
-
+        private void  setUpSearch() {
+                SearchView searchView = findViewById(R.id.restlist_search);
+                //searchView.setIconifiedByDefault(false);
+                searchView.setOnQueryTextListener(this);
+                searchView.setSubmitButtonEnabled(true);
                 searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
                         @Override
                         public void onFocusChange(View view, boolean isFocused) {
-                                if (!isFocused && TextUtils.isEmpty(searchFilter.getSearch())) {
-                                        textView.setVisibility(View.VISIBLE);
-                                } else {
+                                TextView textView = findViewById(R.id.restlist_txtRestaurant);
+                                if (isFocused) {
                                         textView.setVisibility(View.INVISIBLE);
-                                }
-                        }
-                });
-
-                searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                        @Override
-                        public boolean onQueryTextSubmit(String text) {
-                                Filter filter = adapter.getFilter();
-                                if (TextUtils.isEmpty(text)) {
-                                        filter.filter("");
                                 } else {
-                                        filter.filter(text);
+                                        textView.setVisibility(View.VISIBLE);
                                 }
-                                searchView.clearFocus();
-                                return true;
-                        }
-
-                        @Override
-                        public boolean onQueryTextChange(String text) {
-                                Filter filter = adapter.getFilter();
-                                if (TextUtils.isEmpty(text)) {
-                                        filter.filter("");
-                                } else {
-                                        filter.filter(text);
-                                }
-                                return true;
                         }
                 });
         }
 
-        private void setUpRestaurantImage() {
-                for (Restaurant restaurant:myRestaurants) {
-                        restaurant.setIconID(RestaurantListActivity.this);
+        @Override
+        public boolean onQueryTextChange(String text) {
+                Filter filter = adapter.getFilter();
+                if (TextUtils.isEmpty(text)) {
+                        filter.filter("");
+                } else {
+                        filter.filter(text);
                 }
+                return true;
+        }
+
+        @Override
+        public boolean onQueryTextSubmit(String query) {
+                return false;
         }
 
         private class MyListAdapter extends ArrayAdapter<Restaurant> implements Filterable {
                 private ArrayList<Restaurant> originalRestaurants;
                 private ArrayList<Restaurant> restaurants;
-                private SearchFilter searchFilter = SearchFilter.getInstance();
 
                 public MyListAdapter(){
                         super(RestaurantListActivity.this, R.layout.list_restaurants, myRestaurants.getRestaurants());
@@ -356,11 +298,11 @@ public class RestaurantListActivity extends AppCompatActivity {
                                         if (originalRestaurants == null) {
                                                 originalRestaurants = restaurants;
                                         }
+
                                         if (charSequence != null) {
-                                                searchFilter.setSearch(charSequence.toString());
                                                 if (originalRestaurants != null && originalRestaurants.size() > 0) {
                                                         for (final Restaurant restaurant : originalRestaurants) {
-                                                                if (searchFilter.inFilter(restaurant)) {
+                                                                if (restaurant.getRestaurantName().toLowerCase().contains(charSequence.toString())) {
                                                                         results.add(restaurant);
                                                                 }
                                                         }
@@ -386,13 +328,13 @@ public class RestaurantListActivity extends AppCompatActivity {
                 @SuppressLint("SetTextI18n")
                 @Override
                 public View getView(int position, View convertView, ViewGroup parent) {
-                        loadDataFavourite();
                         View itemView = convertView;
                         if (itemView == null){
                                 itemView = getLayoutInflater().inflate(R.layout.list_restaurants, parent, false);
                         }
 
                         Restaurant currentRestaurant = restaurants.get(position);
+                        currentRestaurant.setIconID(RestaurantListActivity.this, currentRestaurant.getRestaurantName());
 
                         TextView restaurantName = itemView.findViewById(R.id.listR_txtRestaurantName);
                         restaurantName.setText(currentRestaurant.getRestaurantName());
@@ -409,6 +351,7 @@ public class RestaurantListActivity extends AppCompatActivity {
 
                         ImageView restaurantImageFav = itemView.findViewById(R.id.listR_imgRestaurantFavourite);
 
+//                        restFav.setVisibility(View.INVISIBLE);
 
                         if (inspections.size() != 0 ) {
                                 Inspection inspection = inspections.get(0);
@@ -437,45 +380,27 @@ public class RestaurantListActivity extends AppCompatActivity {
                                 inspection.setText(noInspection);
 
                         }
-                        
 
 
-                        if ((favouriteRestaurantNames.contains(currentRestaurant.getTrackingNumber()))){
-                                if(!(myFavouriteRestaurants.getFavouriteList().contains(currentRestaurant))){
-                                        myFavouriteRestaurants.getFavouriteList().add(currentRestaurant);
-                                }
+                                loadDataFavourite();
+                                saveData();
 
+
+                        if ((currentRestaurant.getFavourite())|| (myFavouriteRestaurants.getFavouriteList().contains(currentRestaurant))){
                                 currentRestaurant.setFavourite(true);
                                 restaurantName.setTextColor(Color.parseColor("#FFFF00"));
                                 restaurantImageFav.setVisibility(View.VISIBLE);
-                                saveData();
+                        }
 
-                                
-
+                        else if(favouriteRestaurantNames.contains(currentRestaurant.getRestaurantName())){
+                                currentRestaurant.setFavourite(true);
+                                restaurantName.setTextColor(Color.parseColor("#FFFF00"));
+                                restaurantImageFav.setVisibility(View.VISIBLE);
                         }
 
                         else{
-                                try{
-                                        favouriteRestaurantNames.remove(currentRestaurant.getTrackingNumber());
-                                        saveData();
-
-
-                                }catch(Exception e){
-                                        Log.e("Exception", "Found Exception");
-                                }
-
-                                try{
-                                        myFavouriteRestaurants.getFavouriteList().remove(currentRestaurant);
-                                        saveData();
-
-
-
-                                }catch(Exception e){
-                                        Log.e("Exception", "Found Exception");
-                                }
                                 restaurantName.setTextColor(Color.parseColor("#FFFFFF"));
                                 restaurantImageFav.setVisibility(View.INVISIBLE);
-
 
                         }
 
@@ -484,10 +409,7 @@ public class RestaurantListActivity extends AppCompatActivity {
 
                 @Override
                 public int getCount() {
-                        if (restaurants == null ) {
-                                return 0;
-                        }
-                        return restaurants.size();
+                      return restaurants.size();
                 }
 
                 @Override
@@ -511,32 +433,34 @@ public class RestaurantListActivity extends AppCompatActivity {
         }
 
 
-        private void loadDataFavourite() {
+                private void loadDataFavourite() {
+                Log.e("YES","YESINLOAD");
                 SharedPreferences sharedPreferences = getSharedPreferences("shared preferences", MODE_PRIVATE);
                 Gson gson = new Gson();
                 String json = sharedPreferences.getString("task list", null);
                 Type type = new TypeToken<ArrayList<Restaurant>>() {}.getType();
                 favouriteRestaurant = gson.fromJson(json, type);
                 if (favouriteRestaurant == null) {
+                        Log.e("YES","YESINNULL");
                         favouriteRestaurant = new ArrayList<Restaurant>();
                 }
 
                 else{
+//                        Log.e("YES","YESINELSE");
 
                         for(int i = 0; i < favouriteRestaurant.size(); i++){
 
                                 try {
-                                        if(!favouriteRestaurantNames.contains(favouriteRestaurant.get(i).getTrackingNumber()))
-                                                favouriteRestaurantNames.add(favouriteRestaurant.get(i).getTrackingNumber());
+//                                        Log.e("YES","ADDING");
+                                        if(!favouriteRestaurantNames.contains(favouriteRestaurant.get(i).getRestaurantName()))
+                                                favouriteRestaurantNames.add(favouriteRestaurant.get(i).getRestaurantName());
+//                                        Log.e("YES", "SizeofR" + Integer.toString(favouriteRestaurant.size()));
 
                                 }
 
                                 catch(Exception e){
-                                        Log.e("Exception", "Found Exception");
+                                        Log.e("Nothing", "nothing found");
                                 }
-
-                                favouriteRestaurant.get(i).setFavourite(true);
-
                         }
                 }
 
@@ -549,24 +473,21 @@ public class RestaurantListActivity extends AppCompatActivity {
                 String hazardRating = inspection.getHazardRating();
 
                 TextView restaurantHazardLevel = itemView.findViewById(R.id.listR_txtHazardLevel);
-
+                restaurantHazardLevel.setText(hazardRating);
 
                 ImageView restaurantHazardImage = itemView.findViewById(R.id.listR_imgHazard);
                 restaurantHazardImage.setVisibility(View.VISIBLE);
 
                 if(hazardRating.equals("Low")){
                         restaurantHazardImage.setImageResource(R.drawable.hazard_low);
-                        restaurantHazardLevel.setText(getString(R.string.low));
                         restaurantHazardLevel.setTextColor(Color.parseColor("#82F965"));
                 }
                 else if(hazardRating.equals("Moderate")){
                         restaurantHazardImage.setImageResource(R.drawable.hazard_moderate);
-                        restaurantHazardLevel.setText(getString(R.string.moderate));
                         restaurantHazardLevel.setTextColor(Color.parseColor("#F08D47"));
                 }
                 else{
                         restaurantHazardImage.setImageResource(R.drawable.hazard_high);
-                        restaurantHazardLevel.setText(getString(R.string.high));
                         restaurantHazardLevel.setTextColor(Color.parseColor("#EC4A26"));
                 }
 
@@ -579,7 +500,7 @@ public class RestaurantListActivity extends AppCompatActivity {
                         public void onItemClick(AdapterView<?> parent, View viewClicked,
                                                 int position, long id) {
                                 Intent intent = new Intent(RestaurantListActivity.this, RestaurantActivity.class);
-                                intent.putExtra("restaurantName", adapter.getItem(position).getRestaurantName());
+                                intent.putExtra("nameRestaurant", adapter.getItem(position).getRestaurantName());
                                 intent.putExtra("fromMap", false);
                                 startActivity(intent);
                         }
@@ -592,7 +513,6 @@ public class RestaurantListActivity extends AppCompatActivity {
                 super.onRestart();
                 finish();
                 startActivity(getIntent());
-                loadDataFavourite();
 
 
         }

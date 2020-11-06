@@ -42,7 +42,13 @@ public class Date {
     }
 
     public String getSmartDate() throws ParseException {
-       long daysDifference = getDayDifference();
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        java.util.Date currentDate = new java.util.Date();
+        String dateString = String.valueOf(getNumberDate());
+        java.util.Date date = dateFormat.parse(dateString);
+
+        long timeDifference = currentDate.getTime() - date.getTime();
+        long daysDifference = TimeUnit.DAYS.convert(timeDifference, TimeUnit.MILLISECONDS);
 
         if (daysDifference <= 30) {
             return daysDifference + " days";
@@ -51,16 +57,6 @@ public class Date {
         } else {
             return getStringMonth() + " " + year;
         }
-    }
-
-    public long getDayDifference() throws ParseException {
-        @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-        java.util.Date currentDate = new java.util.Date();
-        String dateString = String.valueOf(getNumberDate());
-        java.util.Date date = dateFormat.parse(dateString);
-
-        long timeDifference = currentDate.getTime() - date.getTime();
-        return TimeUnit.DAYS.convert(timeDifference, TimeUnit.MILLISECONDS);
     }
 
     private String getStringMonth() {

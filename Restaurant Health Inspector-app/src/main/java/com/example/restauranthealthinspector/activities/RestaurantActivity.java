@@ -29,18 +29,19 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 
-import static com.example.restauranthealthinspector.activities.RestaurantListActivity.favouriteRestaurantNames;
-
 /**
  * Details about a restaurant with a list of inspections.
  */
 public class RestaurantActivity extends AppCompatActivity {
     private RestaurantsManager myRestaurants;
     private Restaurant restaurant;
-    private String restaurantName;
+    private int indexRestaurant;
+    private String nameRestaurant;
     private boolean fromMap;
     private FavouriteRestaurantManager myFavouriteRestaurants;
     ArrayList<Inspection> inspections;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,47 +66,36 @@ public class RestaurantActivity extends AppCompatActivity {
         noInspectionsMessage();
 
         setUpFavouriteButton();
+
+
+
     }
 
     private void setUpFavouriteButton(){
         final Button btn = (Button) findViewById(R.id.rest_btnFavourite);
         final TextView restName = findViewById(R.id.rest_txtName);
         final TextView restFav = findViewById(R.id.rest_txtFav);
+//        final Button btn = (Button) findViewById(R.id.rest_btnFavourite);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (btn.getText().toString().contains(getString(R.string.favourite))){
+                if (btn.getText().toString().contains("Favourite")){
                     restaurant.setFavourite(true);
                     btn.setText(R.string.unfavourite);
-                    if(!myFavouriteRestaurants.equals(restaurant)){
-                        myFavouriteRestaurants.add(restaurant);
-                    }
+                    myFavouriteRestaurants.add(restaurant);
                     restName.setTextColor(Color.parseColor("#FFFF00"));
                     restFav.setVisibility(View.VISIBLE);
-                    
-                    String message = getString(R.string.favourite) + " " + getString(R.string.restaurant);
-                    Toast.makeText(RestaurantActivity.this, message, Toast.LENGTH_SHORT).show();
-                    
-                    if(!favouriteRestaurantNames.contains(restaurant.getTrackingNumber())){
-                        favouriteRestaurantNames.add(restaurant.getTrackingNumber());
-                    }
+                    Toast.makeText(RestaurantActivity.this, "Favourited Restaurant", Toast.LENGTH_SHORT).show();
                     saveData();
                 }
 
-                else if(btn.getText().toString().contains(getString(R.string.unfavourite))){
+                else if(btn.getText().toString().contains("Un-favourite")){
                     myFavouriteRestaurants.delete(restaurant);
                     restaurant.setFavourite(false);
                     btn.setText(R.string.favourite);
                     restName.setTextColor(Color.parseColor("#FFFFFF"));
                     restFav.setVisibility(View.INVISIBLE);
-
-                    String message = getString(R.string.unfavourite) + " " + getString(R.string.restaurant);
-                    Toast.makeText(RestaurantActivity.this, message, Toast.LENGTH_SHORT).show();
-                    
-                    if(favouriteRestaurantNames.contains(restaurant.getTrackingNumber())){
-                        favouriteRestaurantNames.remove(restaurant.getTrackingNumber());
-                    }
-                    
+                    Toast.makeText(RestaurantActivity.this, "Un-Favourited Restaurant", Toast.LENGTH_SHORT).show();
                     saveData();
                 }
             }
@@ -130,8 +120,8 @@ public class RestaurantActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(RestaurantActivity.this, MapsActivity.class);
-                Toast.makeText(RestaurantActivity.this, getText(R.string.latitude) + " " + restaurant.getAddress().getLatitude(), Toast.LENGTH_SHORT).show();
-                Toast.makeText(RestaurantActivity.this, getText(R.string.longitude) + " " + restaurant.getAddress().getLongitude(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(RestaurantActivity.this, "latitude:" + restaurant.getAddress().getLatitude(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(RestaurantActivity.this, "longitude:" + restaurant.getAddress().getLongitude(), Toast.LENGTH_SHORT).show();
                 intent.putExtra("longitude", restaurant.getAddress().getLongitude());
                 intent.putExtra("latitude", restaurant.getAddress().getLatitude());
                 intent.putExtra("fromGPS", true);
@@ -142,7 +132,7 @@ public class RestaurantActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(RestaurantActivity.this, MapsActivity.class);
-                Toast.makeText(RestaurantActivity.this, getText(R.string.latitude) + " " + restaurant.getAddress().getLatitude(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(RestaurantActivity.this, "latitude:" + restaurant.getAddress().getLatitude(), Toast.LENGTH_SHORT).show();
                 intent.putExtra("longitude", restaurant.getAddress().getLongitude());
                 intent.putExtra("latitude", restaurant.getAddress().getLatitude());
                 intent.putExtra("fromGPS", true);
@@ -161,7 +151,6 @@ public class RestaurantActivity extends AppCompatActivity {
                 Intent intent;
                 if(!fromMap){
                     intent = new Intent(RestaurantActivity.this, RestaurantListActivity.class);
-                    intent.putExtra("data", true);
                 }
                 else{
                     intent = new Intent(RestaurantActivity.this, MapsActivity.class);
@@ -174,10 +163,24 @@ public class RestaurantActivity extends AppCompatActivity {
 
     private void loadRestaurant() {
         Intent intent = getIntent();
+        //indexRestaurant = intent.getIntExtra("indexRestaurant", 0);
         fromMap = intent.getBooleanExtra("fromMap", false);
-        restaurantName = intent.getStringExtra("restaurantName");
-        restaurant = myRestaurants.getRestaurantFromName(restaurantName);
+        nameRestaurant = intent.getStringExtra("nameRestaurant");
+        indexRestaurant = findIndexRestaurant(nameRestaurant);
+        restaurant = myRestaurants.get(indexRestaurant);
         inspections = restaurant.getInspectionsManager().getInspectionList();
+    }
+
+    private int findIndexRestaurant(String nameRestaurant){
+        int i = 0;
+        for (Restaurant restaurant : myRestaurants){
+           restaurant.setIconID(RestaurantActivity.this, restaurant.getRestaurantName());
+            if (restaurant.getRestaurantName().equals(nameRestaurant)){
+                return i;
+            }
+            i++;
+        }
+        return 0;
     }
 
     private void fillRestaurantDetails() {
@@ -205,6 +208,7 @@ public class RestaurantActivity extends AppCompatActivity {
 
         restaurantImage.setImageResource(restaurant.getIconID());
 
+//        RestaurantIcon restaurantIcon = new RestaurantIcon(RestaurantActivity.this, restaurantName);
 
         Address address = restaurant.getAddress();
         TextView restAddress = findViewById(R.id.rest_txtAddress);
@@ -278,22 +282,20 @@ public class RestaurantActivity extends AppCompatActivity {
     private void hazard(View itemView, Inspection inspection) {
         TextView hazardLevel = itemView.findViewById(R.id.listI_txtHazardNum);
         String getHazardLevel = inspection.getHazardRating();
+        hazardLevel.setText(getHazardLevel);
 
         ImageView hazardSymbol = itemView.findViewById(R.id.listI_imgHazard);
 
         if (getHazardLevel.equals("Low")){
             hazardSymbol.setImageResource(R.drawable.hazard_low);
-            hazardLevel.setText(getString(R.string.low));
             hazardLevel.setTextColor(Color.parseColor("#82F965"));
         }
         else if (getHazardLevel.equals("Moderate")){
             hazardSymbol.setImageResource(R.drawable.hazard_moderate);
-            hazardLevel.setText(getString(R.string.moderate));
             hazardLevel.setTextColor(Color.parseColor("#F08D47"));
         }
         else{
             hazardSymbol.setImageResource((R.drawable.hazard_high));
-            hazardLevel.setText(getString(R.string.high));
             hazardLevel.setTextColor(Color.parseColor("#EC4A26"));
         }
     }
@@ -305,7 +307,7 @@ public class RestaurantActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View viewClicked,
                                     int position, long id) {
                 Intent intent = new Intent(RestaurantActivity.this, InspectionActivity.class);
-                intent.putExtra("restaurantName", restaurantName);
+                intent.putExtra("indexRestaurant", indexRestaurant);
                 intent.putExtra("indexInspection", position);
                 startActivity(intent);
             }
