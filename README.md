@@ -51,4 +51,4 @@ git@github.com:Tooo/Restaurant-Health-Inspection-Android.git
 
 
 ## Other
-[Project Documentation](/blob/master/docs/Project%20Documentation.pdf)
+[Project Documentation](docs/Project%20Documentation.pdf)
