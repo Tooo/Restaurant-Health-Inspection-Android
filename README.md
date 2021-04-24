@@ -31,8 +31,8 @@ git@github.com:Tooo/Restaurant-Health-Inspection-Android.git
   </tr>
   <tr>
     <td> List of Sample Set </td>
-    <td> Inspection of 104 Sushi & Co. </td>
-    <td> Violations of 6/25/2018 for 104 Sushi & Co. </td>
+    <td> Inspection Screen </td>
+    <td> Violations Screen </td>
   </tr>
 </table>
 
