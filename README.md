@@ -10,7 +10,7 @@ An Andriod app that shows health inspections of restaurants in Surrey, BC Canada
 2. Click "Get From Version Control"
 3. Insert the following URL:
 ```
-git@github.com:Tooo/Restaurant-Health-Inspection-Android.git
+https://github.com/Tooo/Restaurant-Health-Inspection-Android.git
 ```
 4. Run app on either an Android Emulator or your phone plugged into your computer
 
