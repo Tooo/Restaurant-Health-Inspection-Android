@@ -1,3 +1,6 @@
-# Restaraunt Health Inspection Android App
+# Restaurant Health Inspection Android App
 
-![App Icon](/Restaurant%20Health%20Inspector-app/src/main/res/drawable/icon_app_logo.png)
+<p align='center'>
+  <img src="/Restaurant%20Health%20Inspector-app/src/main/res/drawable/icon_app_logo.png" width="150px" height="150px">
+</p>
+
