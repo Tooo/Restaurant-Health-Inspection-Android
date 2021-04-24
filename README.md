@@ -3,8 +3,7 @@
   <img src="/Restaurant%20Health%20Inspector-app/src/main/res/drawable/icon_app_logo.png" width="150px" height="150px">
 </p>
 
-Surrey restaurant health inspections with the latest data.
-Locate restaurants via list or map view.
+An Andriod app that shows health inspections of restaurants in Surrey, BC Canada.
 
 ## Installation
 1. Download, install, and run [Android Studios](https://developer.android.com/studio)
@@ -19,7 +18,7 @@ git@github.com:Tooo/Restaurant-Health-Inspection-Android.git
 - Latest restaurant health inspections from Surrey
 - Map view with pegs of all restaurants
 - Favourite your restaurants and get notified when they get new inspections
-- Search for names, hazard level, N critical violations
+- Search for names, hazard level, N critical violations, and favourite restaurants
 - Works in both English and French
 
 ## Screenshots
