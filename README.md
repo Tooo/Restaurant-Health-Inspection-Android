@@ -25,9 +25,9 @@ git@github.com:Tooo/Restaurant-Health-Inspection-Android.git
 ## Screenshots
 <table>
   <tr>
-    <td> <img src="images/list.png"> </td>
-    <td> <img src="images/inspection.png"> </td>
-    <td> <img src="images/violations.png"> </td>
+    <td> <img src="images/list.png" width="269px" height="553px"> </td>
+    <td> <img src="images/inspection.png" width="269px" height="553px"> </td>
+    <td> <img src="images/violations.png" width="269px" height="553px"> </td>
   </tr>
   <tr>
     <td> List of Sample Set </td>
@@ -38,9 +38,9 @@ git@github.com:Tooo/Restaurant-Health-Inspection-Android.git
 
 <table>
   <tr>
-    <td> <img src="images/map.png"> </td>
-    <td> <img src="images/search.png"> </td>
-    <td> <img src="images/french.png"> </td>
+    <td> <img src="images/map.png" width="269px" height="553px"> </td>
+    <td> <img src="images/search.png" width="269px" height="553px"> </td>
+    <td> <img src="images/french.png" width="269px" height="553px"> </td>
   </tr>
   <tr>
     <td> Map view of Surrey </td>
